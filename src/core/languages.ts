@@ -1,0 +1,37 @@
+export const LANGUAGE_MAP: Record<string, { name: string; color: string }> = {
+  '.ts': { name: 'TypeScript', color: '#3178c6' },
+  '.tsx': { name: 'TypeScript (JSX)', color: '#3178c6' },
+  '.js': { name: 'JavaScript', color: '#f7df1e' },
+  '.mjs': { name: 'JavaScript', color: '#f7df1e' },
+  '.cjs': { name: 'JavaScript', color: '#f7df1e' },
+  '.py': { name: 'Python', color: '#3776ab' },
+  '.rs': { name: 'Rust', color: '#ce422b' },
+  '.go': { name: 'Go', color: '#00add8' },
+  '.java': { name: 'Java', color: '#b07219' },
+  '.cpp': { name: 'C++', color: '#f34b7d' },
+  '.cc': { name: 'C++', color: '#f34b7d' },
+  '.c': { name: 'C', color: '#555555' },
+  '.h': { name: 'C/C++ Header', color: '#555555' },
+  '.cs': { name: 'C#', color: '#178600' },
+  '.rb': { name: 'Ruby', color: '#701516' },
+  '.php': { name: 'PHP', color: '#4f5d95' },
+  '.swift': { name: 'Swift', color: '#f05138' },
+  '.kt': { name: 'Kotlin', color: '#7f52ff' },
+  '.md': { name: 'Markdown', color: '#083fa1' },
+  '.json': { name: 'JSON', color: '#292929' },
+  '.yaml': { name: 'YAML', color: '#cb171e' },
+  '.yml': { name: 'YAML', color: '#cb171e' },
+  '.css': { name: 'CSS', color: '#563d7c' },
+  '.scss': { name: 'SCSS', color: '#c6538c' },
+  '.html': { name: 'HTML', color: '#e34c26' },
+  '.sh': { name: 'Shell', color: '#89e051' },
+  '.bash': { name: 'Shell', color: '#89e051' },
+  '.sql': { name: 'SQL', color: '#e38c00' },
+  '.prisma': { name: 'Prisma', color: '#0c344b' },
+  '.vue': { name: 'Vue', color: '#41b883' },
+  '.svelte': { name: 'Svelte', color: '#ff3e00' },
+};
+
+export function getLanguageName(ext: string): string {
+  return LANGUAGE_MAP[ext]?.name ?? ext.replace('.', '').toUpperCase();
+}
