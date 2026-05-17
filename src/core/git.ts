@@ -1,4 +1,4 @@
-import simpleGit, { SimpleGit } from 'simple-git';
+import { simpleGit, SimpleGit } from 'simple-git';
 import { CommitRecord, FileChurn } from '../types.js';
 
 export async function getRepoRoot(cwd: string = process.cwd()): Promise<string> {
@@ -9,7 +9,8 @@ export async function getRepoRoot(cwd: string = process.cwd()): Promise<string> 
 
 export async function getLog(
   repoPath: string,
-  since?: string
+  since?: string,
+  until?: string
 ): Promise<CommitRecord[]> {
   const git: SimpleGit = simpleGit(repoPath);
 
@@ -21,6 +22,10 @@ export async function getLog(
 
   if (since) {
     args.push(`--since=${since}`);
+  }
+
+  if (until) {
+    args.push(`--before=${until}`);
   }
 
   const raw = await git.raw(args);
@@ -51,6 +56,8 @@ function parseLog(raw: string): CommitRecord[] {
     let deletions = 0;
     let filesChanged = 0;
 
+    const filenames: string[] = [];
+
     // Parse numstat lines (format: insertions\tdeletions\tfilename)
     for (let i = 1; i < lines.length; i++) {
       const line = lines[i].trim();
@@ -63,6 +70,7 @@ function parseLog(raw: string): CommitRecord[] {
         const del = numstatMatch[2] === '-' ? 0 : parseInt(numstatMatch[2], 10);
         insertions += ins;
         deletions += del;
+        filenames.push(numstatMatch[3]);
       }
     }
 
@@ -75,6 +83,7 @@ function parseLog(raw: string): CommitRecord[] {
       filesChanged,
       insertions,
       deletions,
+      filenames,
     });
   }
 

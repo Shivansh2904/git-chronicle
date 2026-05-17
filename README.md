@@ -24,11 +24,15 @@ npm install -g git-chronicle  # or install globally
 Run from the root of any git repository:
 
 ```bash
-git-chronicle                       # full analysis (default)
-git-chronicle analyze -n 15         # show top 15 items per section
+git-chronicle                            # full analysis (default)
+git-chronicle analyze -n 15              # show top 15 items per section
 git-chronicle authors --sort insertions
 git-chronicle heatmap
-git-chronicle --since 2024-01-01    # recent history only
+git-chronicle --since 2024-01-01         # recent history only
+git-chronicle --since 2023-01-01 --until 2024-01-01  # date range
+git-chronicle --json > stats.json        # export full analysis as JSON
+git-chronicle files                      # top churned files
+git-chronicle files -n 20               # show top 20 churned files
 ```
 
 ### Options
@@ -36,8 +40,10 @@ git-chronicle --since 2024-01-01    # recent history only
 | Flag | Description |
 |------|-------------|
 | `--since <date>` | Limit analysis to commits after this ISO date |
+| `--until <date>` | Limit analysis to commits before this ISO date |
 | `-n, --top <number>` | Number of items to display in ranked lists (default: 10) |
 | `--sort <field>` | Sort authors by `commits`, `insertions`, or `deletions` |
+| `--json` | Output full analysis as JSON to stdout (pipe-friendly) |
 
 ---
 

@@ -3,6 +3,7 @@ import { program } from 'commander';
 import { runAnalyze } from './commands/analyze.js';
 import { runAuthors } from './commands/authors.js';
 import { runHeatmap } from './commands/heatmap.js';
+import { runFiles } from './commands/files.js';
 
 program
   .name('git-chronicle')
@@ -15,6 +16,8 @@ program
   .description('Full repository analysis (default)')
   .option('-n, --top <n>', 'number of top items to show', '10')
   .option('--since <date>', 'only commits since date (YYYY-MM-DD)')
+  .option('--until <date>', 'only commits until date (YYYY-MM-DD)')
+  .option('--json', 'output full analysis as JSON to stdout')
   .action(runAnalyze);
 
 program
@@ -29,5 +32,12 @@ program
   .alias('h')
   .description('Commit activity heatmap by day and hour')
   .action(runHeatmap);
+
+program
+  .command('files')
+  .alias('f')
+  .description('Show top churned files')
+  .option('-n, --top <n>', 'number of files to show', '10')
+  .action(runFiles);
 
 program.parseAsync(process.argv);

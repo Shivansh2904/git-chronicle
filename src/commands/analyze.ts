@@ -6,12 +6,12 @@ import { renderSummaryCard } from '../display/summary.js';
 import { renderBarChart, renderHeatmap } from '../display/chart.js';
 import { renderAuthorsTable, renderChurnTable } from '../display/table.js';
 
-export async function runAnalyze(opts: { top: string; since?: string }) {
+export async function runAnalyze(opts: { top: string; since?: string; until?: string; json?: boolean }) {
   const n = parseInt(opts.top, 10) || 10;
   const spinner = ora('Reading git history…').start();
   try {
     const root = await getRepoRoot();
-    const commits = await getLog(root, opts.since);
+    const commits = await getLog(root, opts.since, opts.until);
     spinner.succeed(`Loaded ${commits.length.toLocaleString()} commits`);
 
     const summary = computeRepoSummary(commits, root);
@@ -19,6 +19,11 @@ export async function runAnalyze(opts: { top: string; since?: string }) {
     const timeline = computeTimeline(commits);
     const heatmap = computeHeatmap(commits);
     const churn = getTopChurnFiles(commits, n);
+
+    if (opts.json) {
+      console.log(JSON.stringify({ summary, authors, timeline, heatmap, churn }, null, 2));
+      return;
+    }
 
     console.log('\n' + renderSummaryCard(summary));
 
