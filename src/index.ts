@@ -5,6 +5,7 @@ import { runAuthors } from './commands/authors.js';
 import { runHeatmap } from './commands/heatmap.js';
 import { runFiles } from './commands/files.js';
 import { runReport } from './commands/report.js';
+import { runCompare } from './commands/compare.js';
 
 program
   .name('git-chronicle')
@@ -50,5 +51,11 @@ program
   .option('-n, --top <n>', 'top N items in ranked sections', '15')
   .option('-o, --output <path>', 'output file path', 'git-chronicle-report.md')
   .action(runReport);
+
+program
+  .command('compare [base] [head]')
+  .alias('cmp')
+  .description('Compare two git refs (default: main..HEAD)')
+  .action((base, head) => runCompare(base, head, {}));
 
 program.parseAsync(process.argv);

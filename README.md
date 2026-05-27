@@ -36,6 +36,9 @@ git-chronicle files -n 20               # show top 20 churned files
 git-chronicle report                     # export Markdown report to git-chronicle-report.md
 git-chronicle report -o REPORT.md -n 25  # custom output path and top-N depth
 git-chronicle report --since 2024-01-01  # report for a date range
+git-chronicle compare main feature/x        # what's new in feature/x since main
+git-chronicle compare v1.0.0 v1.1.0         # changes between two tags
+git-chronicle compare                       # default: main..HEAD
 ```
 
 ### Options
