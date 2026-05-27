@@ -33,6 +33,9 @@ git-chronicle --since 2023-01-01 --until 2024-01-01  # date range
 git-chronicle --json > stats.json        # export full analysis as JSON
 git-chronicle files                      # top churned files
 git-chronicle files -n 20               # show top 20 churned files
+git-chronicle report                     # export Markdown report to git-chronicle-report.md
+git-chronicle report -o REPORT.md -n 25  # custom output path and top-N depth
+git-chronicle report --since 2024-01-01  # report for a date range
 ```
 
 ### Options
@@ -44,6 +47,7 @@ git-chronicle files -n 20               # show top 20 churned files
 | `-n, --top <number>` | Number of items to display in ranked lists (default: 10) |
 | `--sort <field>` | Sort authors by `commits`, `insertions`, or `deletions` |
 | `--json` | Output full analysis as JSON to stdout (pipe-friendly) |
+| `-o, --output <path>` | Output file path for the `report` command (default: `git-chronicle-report.md`) |
 
 ---
 
