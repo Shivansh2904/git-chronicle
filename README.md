@@ -3,7 +3,7 @@
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.4-3178c6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![Node.js](https://img.shields.io/badge/Node.js-%3E%3D18-339933?logo=nodedotjs&logoColor=white)](https://nodejs.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
-[![CI](https://github.com/shivansh-mishra/git-chronicle/actions/workflows/ci.yml/badge.svg)](https://github.com/shivansh-mishra/git-chronicle/actions/workflows/ci.yml)
+[![CI](https://github.com/Shivansh2904/git-chronicle/actions/workflows/ci.yml/badge.svg)](https://github.com/Shivansh2904/git-chronicle/actions/workflows/ci.yml)
 [![npm](https://img.shields.io/npm/v/git-chronicle?color=cb3837&logo=npm)](https://www.npmjs.com/package/git-chronicle)
 
 > Rich git repository analytics in your terminal — commit heatmaps, author breakdowns, language stats, file churn
@@ -130,7 +130,7 @@ Top Churned Files
 ## Development
 
 ```bash
-git clone https://github.com/shivansh-mishra/git-chronicle.git
+git clone https://github.com/Shivansh2904/git-chronicle.git
 cd git-chronicle
 npm install
 npm run dev          # run from source with tsx
