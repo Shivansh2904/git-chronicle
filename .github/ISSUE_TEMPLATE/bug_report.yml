@@ -1,0 +1,45 @@
+name: Bug Report
+description: Report something that is broken or behaves unexpectedly
+labels: ["bug"]
+body:
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: A clear description of the problem
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to reproduce
+      description: Command you ran, the repo you ran it against, the error or wrong output
+      placeholder: |
+        1. cd ~/my-repo
+        2. git-chronicle authors --sort insertions
+        3. Sees error: ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behaviour
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: Output of `git-chronicle --version`
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      placeholder: |
+        - OS:
+        - Node version (node --version):
+        - Repo size / git age:
