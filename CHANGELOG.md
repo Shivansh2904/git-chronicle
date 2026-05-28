@@ -8,8 +8,12 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 ## [Unreleased]
 
 ### Added
+- `streaks` command (alias `s`) — longest and current consecutive-day commit streaks, plus total active days; respects `--since`/`--until`
+- `Makefile` with `install`, `dev`, `test`, `build`, `link`, `publish` targets
+- GitHub issue and PR templates
 - Weekly Dependabot updates for npm and GitHub Actions
 - `CONTRIBUTING.md` with dev setup, command-creation guidelines, and PR checklist
+- `examples/sample-report.md` showing real `report` output
 
 ## [1.3.0] — 2026-05-27
 

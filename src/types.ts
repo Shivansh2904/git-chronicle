@@ -44,6 +44,12 @@ export interface HeatmapData {
   max: number;
 }
 
+export interface StreakData {
+  longest: { length: number; from: string | null; to: string | null };
+  current: { length: number; from: string | null; to: string | null };
+  totalActiveDays: number;
+}
+
 export interface AnalyzeOptions {
   top: string;
   since?: string;

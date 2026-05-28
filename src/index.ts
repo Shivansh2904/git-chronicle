@@ -6,6 +6,7 @@ import { runHeatmap } from './commands/heatmap.js';
 import { runFiles } from './commands/files.js';
 import { runReport } from './commands/report.js';
 import { runCompare } from './commands/compare.js';
+import { runStreaks } from './commands/streaks.js';
 
 program
   .name('git-chronicle')
@@ -57,5 +58,13 @@ program
   .alias('cmp')
   .description('Compare two git refs (default: main..HEAD)')
   .action((base, head) => runCompare(base, head, {}));
+
+program
+  .command('streaks')
+  .alias('s')
+  .description('Longest and current consecutive-day commit streaks')
+  .option('--since <date>', 'only commits since date (YYYY-MM-DD)')
+  .option('--until <date>', 'only commits until date (YYYY-MM-DD)')
+  .action(runStreaks);
 
 program.parseAsync(process.argv);

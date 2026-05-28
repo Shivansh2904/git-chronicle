@@ -39,6 +39,8 @@ git-chronicle report --since 2024-01-01  # report for a date range
 git-chronicle compare main feature/x        # what's new in feature/x since main
 git-chronicle compare v1.0.0 v1.1.0         # changes between two tags
 git-chronicle compare                       # default: main..HEAD
+git-chronicle streaks                       # longest & current consecutive-day commit streaks
+git-chronicle streaks --since 2024-01-01    # streaks within a date range
 ```
 
 ### Options

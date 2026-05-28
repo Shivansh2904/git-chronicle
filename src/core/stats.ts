@@ -1,4 +1,4 @@
-import type { CommitRecord, AuthorStats, HeatmapData, FileChurn, RepoSummary } from '../types.js';
+import type { CommitRecord, AuthorStats, HeatmapData, FileChurn, RepoSummary, StreakData } from '../types.js';
 import { getLanguageName } from './languages.js';
 import path from 'node:path';
 
@@ -96,4 +96,55 @@ export function getTopChurnFiles(commits: CommitRecord[], n: number): FileChurn[
     }
   }
   return [...map.values()].sort((a, b) => b.changes - a.changes).slice(0, n);
+}
+
+/**
+ * Compute consecutive-calendar-day commit streaks.
+ *
+ * A "streak" is a run of consecutive UTC calendar days that each have at least
+ * one commit. Returns the longest streak ever and the current streak (the run
+ * ending on the most recent commit day).
+ */
+export function computeStreaks(commits: CommitRecord[]): StreakData {
+  const empty = { length: 0, from: null, to: null };
+  if (commits.length === 0) {
+    return { longest: { ...empty }, current: { ...empty }, totalActiveDays: 0 };
+  }
+
+  // Unique commit days as YYYY-MM-DD, sorted ascending.
+  const days = [...new Set(commits.map(c => c.date.toISOString().slice(0, 10)))].sort();
+
+  const MS_PER_DAY = 86_400_000;
+  const toUtc = (s: string) => Date.parse(s + 'T00:00:00Z');
+
+  let longest = { length: 1, from: days[0], to: days[0] };
+  let runStart = days[0];
+  let runLen = 1;
+
+  for (let i = 1; i < days.length; i++) {
+    const gap = (toUtc(days[i]) - toUtc(days[i - 1])) / MS_PER_DAY;
+    if (gap === 1) {
+      runLen++;
+    } else {
+      runLen = 1;
+      runStart = days[i];
+    }
+    if (runLen > longest.length) {
+      longest = { length: runLen, from: runStart, to: days[i] };
+    }
+  }
+
+  // Current streak = the trailing run ending on the last commit day.
+  const current = { length: 1, from: days[days.length - 1], to: days[days.length - 1] };
+  for (let i = days.length - 1; i > 0; i--) {
+    const gap = (toUtc(days[i]) - toUtc(days[i - 1])) / MS_PER_DAY;
+    if (gap === 1) {
+      current.length++;
+      current.from = days[i - 1];
+    } else {
+      break;
+    }
+  }
+
+  return { longest, current, totalActiveDays: days.length };
 }

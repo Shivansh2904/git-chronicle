@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { computeAuthorStats, computeHeatmap, computeTimeline, getTopChurnFiles } from '../src/core/stats.js';
+import { computeAuthorStats, computeHeatmap, computeTimeline, getTopChurnFiles, computeStreaks } from '../src/core/stats.js';
 import type { CommitRecord } from '../src/types.js';
 
 // ---------------------------------------------------------------------------
@@ -228,5 +228,79 @@ describe('getTopChurnFiles', () => {
     const result = getTopChurnFiles(COMMITS, 1000);
     // Just checks it doesn't throw and returns an array
     expect(Array.isArray(result)).toBe(true);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// computeStreaks
+// ---------------------------------------------------------------------------
+
+describe('computeStreaks', () => {
+  const onDay = (day: string) =>
+    makeCommit({ date: new Date(`${day}T12:00:00Z`) });
+
+  it('returns zeros for an empty repo', () => {
+    const s = computeStreaks([]);
+    expect(s.longest.length).toBe(0);
+    expect(s.current.length).toBe(0);
+    expect(s.totalActiveDays).toBe(0);
+    expect(s.longest.from).toBeNull();
+  });
+
+  it('counts a single commit day as a streak of 1', () => {
+    const s = computeStreaks([onDay('2024-03-01')]);
+    expect(s.longest.length).toBe(1);
+    expect(s.current.length).toBe(1);
+    expect(s.totalActiveDays).toBe(1);
+    expect(s.longest.from).toBe('2024-03-01');
+    expect(s.longest.to).toBe('2024-03-01');
+  });
+
+  it('finds the longest run of consecutive days', () => {
+    // 3-day run, gap, 2-day run
+    const s = computeStreaks([
+      onDay('2024-03-01'),
+      onDay('2024-03-02'),
+      onDay('2024-03-03'),
+      onDay('2024-03-10'),
+      onDay('2024-03-11'),
+    ]);
+    expect(s.longest.length).toBe(3);
+    expect(s.longest.from).toBe('2024-03-01');
+    expect(s.longest.to).toBe('2024-03-03');
+    expect(s.totalActiveDays).toBe(5);
+  });
+
+  it('collapses multiple commits on the same day', () => {
+    const s = computeStreaks([
+      onDay('2024-03-01'),
+      onDay('2024-03-01'),
+      onDay('2024-03-02'),
+    ]);
+    expect(s.longest.length).toBe(2);
+    expect(s.totalActiveDays).toBe(2);
+  });
+
+  it('computes the current (trailing) streak independent of the longest', () => {
+    const s = computeStreaks([
+      onDay('2024-03-01'),
+      onDay('2024-03-02'),
+      onDay('2024-03-03'), // longest = 3
+      onDay('2024-03-20'),
+      onDay('2024-03-21'), // current = 2
+    ]);
+    expect(s.longest.length).toBe(3);
+    expect(s.current.length).toBe(2);
+    expect(s.current.from).toBe('2024-03-20');
+    expect(s.current.to).toBe('2024-03-21');
+  });
+
+  it('is order-independent (unsorted input still works)', () => {
+    const s = computeStreaks([
+      onDay('2024-03-03'),
+      onDay('2024-03-01'),
+      onDay('2024-03-02'),
+    ]);
+    expect(s.longest.length).toBe(3);
   });
 });
