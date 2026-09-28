@@ -1,7 +1,7 @@
 import { simpleGit } from 'simple-git';
 import chalk from 'chalk';
 import ora from 'ora';
-import { getRepoRoot } from '../core/git.js';
+import { getDefaultBase, getRepoRoot } from '../core/git.js';
 import { plainTable } from '../display/table.js';
 
 interface CompareCommit {
@@ -14,14 +14,15 @@ export async function runCompare(
   baseRef: string | undefined,
   headRef: string | undefined,
 ): Promise<void> {
-  const base = baseRef ?? 'main';
   const head = headRef ?? 'HEAD';
 
-  const spinner = ora(`Comparing ${chalk.cyan(base)}..${chalk.cyan(head)}`).start();
+  const spinner = ora('Comparing…').start();
 
   try {
     const repoPath = await getRepoRoot();
     const git = simpleGit(repoPath);
+    const base = baseRef ?? await getDefaultBase(repoPath);
+    spinner.text = `Comparing ${chalk.cyan(base)}..${chalk.cyan(head)}`;
 
     // Get commits in head that are not in base, with per-commit numstat.
     // simple-git's typed log result doesn't expose numstat, so parse from raw output.

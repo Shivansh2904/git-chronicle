@@ -93,3 +93,22 @@ export function parseLog(raw: string): CommitRecord[] {
 
   return commits;
 }
+
+/**
+ * The ref `compare` measures against when none is given: a local main or
+ * master branch, else the remote's default branch (origin/HEAD).
+ */
+export async function getDefaultBase(repoPath: string): Promise<string> {
+  const git: SimpleGit = simpleGit(repoPath);
+  for (const branch of ['main', 'master']) {
+    const found = await git.raw(['for-each-ref', '--format=%(refname:short)', `refs/heads/${branch}`]);
+    if (found.trim()) return branch;
+  }
+  try {
+    const remoteHead = await git.raw(['symbolic-ref', '--quiet', '--short', 'refs/remotes/origin/HEAD']);
+    if (remoteHead.trim()) return remoteHead.trim();
+  } catch {
+    // No origin/HEAD: fall through to the error below.
+  }
+  throw new Error('No main or master branch found; name the base ref: git-chronicle compare <base> [head]');
+}
