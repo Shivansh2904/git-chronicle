@@ -28,9 +28,9 @@ Or run it once without installing:
 npx github:Shivansh2904/git-chronicle
 ```
 
-A global install straight from GitHub (`npm install -g github:...`) failed
-when tried with npm 10.9.3 on Windows: the package's `prepare` step stopped
-with `'tsc' is not recognized`. Use the clone and `npm link` instead.
+A global `npm install -g` from a git URL of this repo stopped at the
+package's `prepare` step with `'tsc' is not recognized` (tried with npm 10.9.3
+on Windows, installing from a local clone). Use the clone and `npm link` instead.
 
 Requires Node.js 18 or newer and `git` on your PATH.
 
