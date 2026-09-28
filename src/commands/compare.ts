@@ -1,12 +1,8 @@
 import { simpleGit } from 'simple-git';
 import chalk from 'chalk';
 import ora from 'ora';
-import Table from 'cli-table3';
 import { getRepoRoot } from '../core/git.js';
-
-interface CompareOptions {
-  // any flags later
-}
+import { plainTable } from '../display/table.js';
 
 interface CompareCommit {
   hash: string;
@@ -17,7 +13,6 @@ interface CompareCommit {
 export async function runCompare(
   baseRef: string | undefined,
   headRef: string | undefined,
-  _opts: CompareOptions,
 ): Promise<void> {
   const base = baseRef ?? 'main';
   const head = headRef ?? 'HEAD';
@@ -113,9 +108,8 @@ export async function runCompare(
 
     // Top authors
     const sortedAuthors = [...authors.entries()].sort((a, b) => b[1] - a[1]).slice(0, 5);
-    const authorTable = new Table({
+    const authorTable = plainTable({
       head: ['Author', 'Commits'].map(h => chalk.cyan(h)),
-      style: { border: ['dim'] },
     });
     for (const [name, count] of sortedAuthors) {
       authorTable.push([chalk.bold(name), chalk.yellow(count.toString())]);
@@ -127,9 +121,8 @@ export async function runCompare(
     const sortedFiles = [...fileMap.entries()]
       .sort((a, b) => b[1].changes - a[1].changes)
       .slice(0, 10);
-    const fileTable = new Table({
+    const fileTable = plainTable({
       head: ['File', 'Changes', '+Lines', '-Lines'].map(h => chalk.cyan(h)),
-      style: { border: ['dim'] },
       colWidths: [48, 10, 12, 12],
     });
     for (const [path, stats] of sortedFiles) {

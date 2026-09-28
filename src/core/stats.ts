@@ -2,6 +2,9 @@ import type { CommitRecord, AuthorStats, HeatmapData, FileChurn, RepoSummary, St
 import { getLanguageName } from './languages.js';
 import path from 'node:path';
 
+/** Day names in the order used by every day-of-week index here: Monday = 0. */
+export const WEEKDAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'] as const;
+
 export function computeAuthorStats(commits: CommitRecord[]): AuthorStats[] {
   const map = new Map<string, AuthorStats>();
   const daysSeen = new Map<string, Set<string>>();
@@ -50,34 +53,41 @@ export function computeRepoSummary(commits: CommitRecord[], repoPath: string): R
   if (commits.length === 0) {
     return { path: repoPath, totalCommits: 0, authors: 0, dateRange: { from: new Date(), to: new Date() }, mostActiveHour: 0, mostActiveDayOfWeek: 0, topLanguages: [] };
   }
-  const dates = commits.map(c => c.date);
+  // A loop rather than Math.min(...times): spreading one argument per commit
+  // overflows the call stack on large histories.
+  let first = commits[0].date;
+  let last = commits[0].date;
   const hourCounts = new Array(24).fill(0);
   const dayCounts = new Array(7).fill(0);
-  const extCounts = new Map<string, number>();
+  const languageCounts = new Map<string, number>();
   const emailSet = new Set<string>();
 
   for (const c of commits) {
+    if (c.date < first) first = c.date;
+    if (c.date > last) last = c.date;
     hourCounts[c.date.getHours()]++;
     dayCounts[(c.date.getDay() + 6) % 7]++;
     emailSet.add(c.email);
-    // count file extensions from filenames if present
-    for (const f of (c as any).filenames ?? []) {
-      const ext = path.extname(f).toLowerCase();
-      if (ext) extCounts.set(ext, (extCounts.get(ext) ?? 0) + 1);
+    for (const f of c.files) {
+      const ext = path.extname(f.path).toLowerCase();
+      if (!ext) continue;
+      // Count by language, not extension, so .yml and .yaml share one row.
+      const language = getLanguageName(ext);
+      languageCounts.set(language, (languageCounts.get(language) ?? 0) + 1);
     }
   }
 
-  const totalFiles = [...extCounts.values()].reduce((a, b) => a + b, 0) || 1;
-  const topLanguages = [...extCounts.entries()]
+  const totalFiles = [...languageCounts.values()].reduce((a, b) => a + b, 0) || 1;
+  const topLanguages = [...languageCounts.entries()]
     .sort(([, a], [, b]) => b - a)
     .slice(0, 6)
-    .map(([ext, lines]) => ({ ext: getLanguageName(ext), lines, pct: Math.round((lines / totalFiles) * 100) }));
+    .map(([language, fileChanges]) => ({ language, fileChanges, pct: Math.round((fileChanges / totalFiles) * 100) }));
 
   return {
     path: repoPath,
     totalCommits: commits.length,
     authors: emailSet.size,
-    dateRange: { from: new Date(Math.min(...dates.map(d => d.getTime()))), to: new Date(Math.max(...dates.map(d => d.getTime()))) },
+    dateRange: { from: first, to: last },
     mostActiveHour: hourCounts.indexOf(Math.max(...hourCounts)),
     mostActiveDayOfWeek: dayCounts.indexOf(Math.max(...dayCounts)),
     topLanguages,
@@ -87,12 +97,12 @@ export function computeRepoSummary(commits: CommitRecord[], repoPath: string): R
 export function getTopChurnFiles(commits: CommitRecord[], n: number): FileChurn[] {
   const map = new Map<string, FileChurn>();
   for (const c of commits) {
-    for (const f of (c as any).filenames ?? []) {
-      if (!map.has(f)) map.set(f, { path: f, changes: 0, insertions: 0, deletions: 0 });
-      const s = map.get(f)!;
+    for (const f of c.files) {
+      if (!map.has(f.path)) map.set(f.path, { path: f.path, changes: 0, insertions: 0, deletions: 0 });
+      const s = map.get(f.path)!;
       s.changes++;
-      s.insertions += Math.floor(c.insertions / Math.max((c as any).filenames?.length ?? 1, 1));
-      s.deletions += Math.floor(c.deletions / Math.max((c as any).filenames?.length ?? 1, 1));
+      s.insertions += f.insertions;
+      s.deletions += f.deletions;
     }
   }
   return [...map.values()].sort((a, b) => b.changes - a.changes).slice(0, n);

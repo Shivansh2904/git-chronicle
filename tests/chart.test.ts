@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { renderBarChart, renderSparkline } from '../src/display/chart.js';
+import { renderBarChart } from '../src/display/chart.js';
 
 // ---------------------------------------------------------------------------
 // renderBarChart
@@ -49,52 +49,5 @@ describe('renderBarChart', () => {
   it('handles a single item with a large value', () => {
     const output = renderBarChart([{ label: 'Dec', value: 100_000 }], 'Big');
     expect(output).toContain('Dec');
-  });
-});
-
-// ---------------------------------------------------------------------------
-// renderSparkline
-// ---------------------------------------------------------------------------
-
-describe('renderSparkline', () => {
-  it('returns correct length', () => {
-    const result = renderSparkline([1, 2, 3, 4, 5]);
-    // Strip ANSI escape codes before measuring length
-    const clean = result.replace(/\x1b\[[0-9;]*m/g, '');
-    expect(clean).toHaveLength(5);
-  });
-
-  it('handles single value', () => {
-    expect(() => renderSparkline([42])).not.toThrow();
-  });
-
-  it('handles all-zero values', () => {
-    expect(() => renderSparkline([0, 0, 0])).not.toThrow();
-  });
-
-  it('returns a string', () => {
-    const result = renderSparkline([10, 20, 30]);
-    expect(typeof result).toBe('string');
-  });
-
-  it('length matches input length after stripping ANSI', () => {
-    const values = [3, 1, 4, 1, 5, 9, 2, 6];
-    const result = renderSparkline(values);
-    const clean = result.replace(/\x1b\[[0-9;]*m/g, '');
-    expect(clean).toHaveLength(values.length);
-  });
-
-  it('handles descending values without throwing', () => {
-    expect(() => renderSparkline([100, 80, 60, 40, 20])).not.toThrow();
-  });
-
-  it('handles a two-element array', () => {
-    const result = renderSparkline([1, 2]);
-    const clean = result.replace(/\x1b\[[0-9;]*m/g, '');
-    expect(clean).toHaveLength(2);
-  });
-
-  it('handles identical non-zero values', () => {
-    expect(() => renderSparkline([5, 5, 5, 5])).not.toThrow();
   });
 });

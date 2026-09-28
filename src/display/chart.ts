@@ -1,6 +1,5 @@
 import chalk from 'chalk';
 
-const SPARK = '▁▂▃▄▅▆▇█';
 const BLOCKS = ['░', '▒', '▓', '█'];
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
@@ -26,10 +25,13 @@ export function renderBarChart(
 export function renderHeatmap(grid: number[][], max: number): string {
   if (max === 0) return chalk.dim('  No commit data to display.');
   const lines: string[] = [];
-  const header = '      ' + Array.from({ length: 24 }, (_, h) =>
-    h % 3 === 0 ? String(h).padStart(2, ' ') : '  '
-  ).join('');
-  lines.push(chalk.dim(header));
+  // One character per hour, so each label starts over its own hour's cell.
+  // The 7-character indent matches the "  Mon  " row prefix below.
+  const axis = new Array(24).fill(' ');
+  for (let h = 0; h < 24; h += 6) {
+    [...String(h)].forEach((ch, i) => { axis[h + i] = ch; });
+  }
+  lines.push(chalk.dim('       ' + axis.join('')));
   for (let d = 0; d < 7; d++) {
     const cells = Array.from({ length: 24 }, (_, h) => {
       const val = grid[d]?.[h] ?? 0;
@@ -40,9 +42,4 @@ export function renderHeatmap(grid: number[][], max: number): string {
     lines.push(`  ${chalk.bold(DAYS[d])}  ${cells}`);
   }
   return lines.join('\n');
-}
-
-export function renderSparkline(values: number[]): string {
-  const max = Math.max(...values, 1);
-  return values.map(v => SPARK[Math.min(7, Math.round((v / max) * 7))]).join('');
 }

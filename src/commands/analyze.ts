@@ -45,7 +45,7 @@ export async function runAnalyze(opts: { top: string; since?: string; until?: st
 
     if (summary.topLanguages.length > 0) {
       console.log('\n' + renderBarChart(
-        summary.topLanguages.map(l => ({ label: l.ext, value: l.lines })),
+        summary.topLanguages.map(l => ({ label: l.language, value: l.fileChanges })),
         chalk.bold.underline('Languages (by file changes)')
       ));
     }

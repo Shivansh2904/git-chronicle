@@ -57,7 +57,7 @@ program
   .command('compare [base] [head]')
   .alias('cmp')
   .description('Compare two git refs (default: main..HEAD)')
-  .action((base, head) => runCompare(base, head, {}));
+  .action((base, head) => runCompare(base, head));
 
 program
   .command('streaks')

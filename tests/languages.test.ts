@@ -43,14 +43,21 @@ describe('LANGUAGE_MAP', () => {
     }
   });
 
-  it('has a reasonable number of unique language names', () => {
-    // Some extensions intentionally share a name: .ts and .tsx both map to "TypeScript",
-    // .js/.jsx → "JavaScript", .yml/.yaml → "YAML", etc. So unique names < total entries
-    // but should still cover a wide range.
-    const names = Object.values(LANGUAGE_MAP).map(v => v.name);
-    const uniqueNames = new Set(names);
-    expect(uniqueNames.size).toBeGreaterThanOrEqual(15);
-    expect(uniqueNames.size).toBeLessThanOrEqual(names.length);
+  it('has no duplicate names apart from the intended extension aliases', () => {
+    // Every language name used by more than one extension, with its extensions.
+    const extsByName = new Map<string, string[]>();
+    for (const [ext, { name }] of Object.entries(LANGUAGE_MAP)) {
+      extsByName.set(name, [...(extsByName.get(name) ?? []), ext]);
+    }
+    const shared = Object.fromEntries(
+      [...extsByName].filter(([, exts]) => exts.length > 1).map(([name, exts]) => [name, exts.sort()])
+    );
+    expect(shared).toEqual({
+      JavaScript: ['.cjs', '.js', '.mjs'],
+      'C++': ['.cc', '.cpp'],
+      YAML: ['.yaml', '.yml'],
+      Shell: ['.bash', '.sh'],
+    });
   });
 
   it('TypeScript color is a valid hex string', () => {
@@ -93,11 +100,6 @@ describe('getLanguageName', () => {
   it('strips the dot when uppercasing unknown extensions', () => {
     const result = getLanguageName('.unknown');
     expect(result).not.toContain('.');
-  });
-
-  it('is case-insensitive or consistent for known extensions', () => {
-    // getLanguageName('.ts') should always return the same value
-    expect(getLanguageName('.ts')).toBe(getLanguageName('.ts'));
   });
 
   it('returns a non-empty string for any input', () => {

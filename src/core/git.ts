@@ -1,11 +1,17 @@
 import { simpleGit, SimpleGit } from 'simple-git';
-import { CommitRecord, FileChurn } from '../types.js';
+import { CommitRecord, FileChange } from '../types.js';
 
 export async function getRepoRoot(cwd: string = process.cwd()): Promise<string> {
   const git: SimpleGit = simpleGit(cwd);
   const root = await git.revparse(['--show-toplevel']);
   return root.trim();
 }
+
+// Hash, author name and email (after .mailmap), author date, subject. With
+// -z, git ends every field and every numstat entry with NUL and writes paths
+// verbatim (no quoting). None of these can contain NUL, so no name, subject or
+// path can break the parse.
+const LOG_FIELDS = ['%H', '%aN', '%aE', '%aI', '%s'];
 
 export async function getLog(
   repoPath: string,
@@ -14,11 +20,7 @@ export async function getLog(
 ): Promise<CommitRecord[]> {
   const git: SimpleGit = simpleGit(repoPath);
 
-  const args = [
-    'log',
-    '--format=COMMIT_DELIMITER%H|%an|%ae|%aI|%s',
-    '--numstat',
-  ];
+  const args = ['log', '-z', `--format=${LOG_FIELDS.join('%x00')}`, '--numstat'];
 
   if (since) {
     args.push(`--since=${since}`);
@@ -32,111 +34,62 @@ export async function getLog(
   return parseLog(raw);
 }
 
-function parseLog(raw: string): CommitRecord[] {
+// "<insertions>\t<deletions>\t<path>"; binary files show "-" for both counts.
+// The first entry after a commit's header starts with a newline.
+const NUMSTAT_ENTRY = /^\n?(\d+|-)\t(\d+|-)\t(.*)$/s;
+const HASH = /^[0-9a-f]{40}([0-9a-f]{24})?$/;
+
+/**
+ * Parse `git log -z --numstat` output written with LOG_FIELDS. Each commit is
+ * its header fields followed by zero or more numstat entries. A rename or copy
+ * is an entry with an empty path followed by the old and the new path as two
+ * more fields; it is counted under the new path.
+ */
+export function parseLog(raw: string): CommitRecord[] {
+  // The output ends with a NUL; drop the empty field that leaves behind.
+  const fields = raw.split('\0');
+  if (fields[fields.length - 1] === '') fields.pop();
+
   const commits: CommitRecord[] = [];
-  if (!raw.trim()) return commits;
+  let i = 0;
 
-  // Split on our delimiter
-  const blocks = raw.split('COMMIT_DELIMITER').filter(b => b.trim());
+  while (i < fields.length) {
+    const header = fields.slice(i, i + LOG_FIELDS.length);
+    const [hash, author, email, dateStr, subject] = header;
+    const date = new Date(dateStr);
+    if (header.length < LOG_FIELDS.length || !HASH.test(hash) || Number.isNaN(date.getTime())) {
+      throw new Error(`Unexpected git log output at field ${i}: ${JSON.stringify(header)}`);
+    }
+    i += LOG_FIELDS.length;
 
-  for (const block of blocks) {
-    const lines = block.trim().split('\n');
-    if (lines.length === 0) continue;
-
-    const headerLine = lines[0].trim();
-    if (!headerLine) continue;
-
-    const parts = headerLine.split('|');
-    if (parts.length < 5) continue;
-
-    const [hash, author, email, dateStr, ...subjectParts] = parts;
-    const subject = subjectParts.join('|');
-
-    let insertions = 0;
-    let deletions = 0;
-    let filesChanged = 0;
-
-    const filenames: string[] = [];
-
-    // Parse numstat lines (format: insertions\tdeletions\tfilename)
-    for (let i = 1; i < lines.length; i++) {
-      const line = lines[i].trim();
-      if (!line) continue;
-
-      const numstatMatch = line.match(/^(\d+|-)\t(\d+|-)\t(.+)$/);
-      if (numstatMatch) {
-        filesChanged++;
-        const ins = numstatMatch[1] === '-' ? 0 : parseInt(numstatMatch[1], 10);
-        const del = numstatMatch[2] === '-' ? 0 : parseInt(numstatMatch[2], 10);
-        insertions += ins;
-        deletions += del;
-        filenames.push(numstatMatch[3]);
+    const files: FileChange[] = [];
+    let m: RegExpExecArray | null;
+    while (i < fields.length && (m = NUMSTAT_ENTRY.exec(fields[i]))) {
+      let path = m[3];
+      i++;
+      if (path === '') {
+        path = fields[i + 1];
+        i += 2;
       }
+      files.push({
+        path,
+        insertions: m[1] === '-' ? 0 : parseInt(m[1], 10),
+        deletions: m[2] === '-' ? 0 : parseInt(m[2], 10),
+      });
     }
 
     commits.push({
-      hash: hash.trim(),
-      author: author.trim(),
-      email: email.trim(),
-      date: new Date(dateStr.trim()),
-      subject: subject.trim(),
-      filesChanged,
-      insertions,
-      deletions,
-      filenames,
+      hash,
+      author,
+      email,
+      date,
+      subject,
+      filesChanged: files.length,
+      insertions: files.reduce((sum, f) => sum + f.insertions, 0),
+      deletions: files.reduce((sum, f) => sum + f.deletions, 0),
+      files,
     });
   }
 
   return commits;
-}
-
-export async function getFileChurn(
-  repoPath: string,
-  since?: string
-): Promise<FileChurn[]> {
-  const git: SimpleGit = simpleGit(repoPath);
-
-  const args = ['log', '--numstat', '--format='];
-  if (since) {
-    args.push(`--since=${since}`);
-  }
-
-  const raw = await git.raw(args);
-  const fileMap = new Map<string, FileChurn>();
-
-  const lines = raw.split('\n');
-  for (const line of lines) {
-    const trimmed = line.trim();
-    if (!trimmed) continue;
-
-    const match = trimmed.match(/^(\d+|-)\t(\d+|-)\t(.+)$/);
-    if (match) {
-      const ins = match[1] === '-' ? 0 : parseInt(match[1], 10);
-      const del = match[2] === '-' ? 0 : parseInt(match[2], 10);
-      const filePath = match[3];
-
-      // Handle renames like "old => new" or "{old => new}/file"
-      const cleanPath = filePath.replace(/\{.*? => (.*?)\}/, '$1').replace(/ => .*$/, '');
-
-      if (!fileMap.has(cleanPath)) {
-        fileMap.set(cleanPath, { path: cleanPath, changes: 0, insertions: 0, deletions: 0 });
-      }
-      const entry = fileMap.get(cleanPath)!;
-      entry.changes++;
-      entry.insertions += ins;
-      entry.deletions += del;
-    }
-  }
-
-  return Array.from(fileMap.values()).sort((a, b) => b.changes - a.changes);
-}
-
-export async function getFilesInRepo(repoPath: string): Promise<string[]> {
-  const git: SimpleGit = simpleGit(repoPath);
-  try {
-    const raw = await git.raw(['ls-files']);
-    return raw.split('\n').filter(f => f.trim());
-  } catch {
-    return [];
-  }
 }

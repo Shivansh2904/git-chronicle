@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { computeAuthorStats, computeHeatmap, computeTimeline, getTopChurnFiles, computeStreaks } from '../src/core/stats.js';
+import { computeAuthorStats, computeHeatmap, computeTimeline, getTopChurnFiles, computeStreaks, computeRepoSummary } from '../src/core/stats.js';
 import type { CommitRecord } from '../src/types.js';
 
 // ---------------------------------------------------------------------------
@@ -15,7 +15,7 @@ const makeCommit = (overrides: Partial<CommitRecord> = {}): CommitRecord => ({
   filesChanged: 2,
   insertions: 10,
   deletions: 3,
-  filenames: [],
+  files: [],
   ...overrides,
 });
 
@@ -27,7 +27,10 @@ const COMMITS: CommitRecord[] = [
     insertions: 100,
     deletions: 20,
     date: new Date('2024-01-15T10:00:00Z'),
-    filenames: ['src/index.ts', 'src/utils.ts'],
+    files: [
+      { path: 'src/index.ts', insertions: 60, deletions: 15 },
+      { path: 'src/utils.ts', insertions: 40, deletions: 5 },
+    ],
   }),
   makeCommit({
     hash: '2',
@@ -36,7 +39,7 @@ const COMMITS: CommitRecord[] = [
     insertions: 50,
     deletions: 5,
     date: new Date('2024-02-10T14:00:00Z'),
-    filenames: ['src/index.ts'],
+    files: [{ path: 'src/index.ts', insertions: 50, deletions: 5 }],
   }),
   makeCommit({
     hash: '3',
@@ -45,7 +48,11 @@ const COMMITS: CommitRecord[] = [
     insertions: 200,
     deletions: 80,
     date: new Date('2024-01-20T09:00:00Z'),
-    filenames: ['src/index.ts', 'README.md', 'docs/api.md'],
+    files: [
+      { path: 'src/index.ts', insertions: 120, deletions: 50 },
+      { path: 'README.md', insertions: 50, deletions: 20 },
+      { path: 'docs/api.md', insertions: 30, deletions: 10 },
+    ],
   }),
 ];
 
@@ -224,6 +231,12 @@ describe('getTopChurnFiles', () => {
     expect(result[0].changes).toBe(3);
   });
 
+  it('sums the insertions and deletions of each file', () => {
+    const result = getTopChurnFiles(COMMITS, 5);
+    expect(result.find(f => f.path === 'src/index.ts')).toEqual({ path: 'src/index.ts', changes: 3, insertions: 230, deletions: 70 });
+    expect(result.find(f => f.path === 'src/utils.ts')).toEqual({ path: 'src/utils.ts', changes: 1, insertions: 40, deletions: 5 });
+  });
+
   it('handles n larger than available files gracefully', () => {
     const result = getTopChurnFiles(COMMITS, 1000);
     // Just checks it doesn't throw and returns an array
@@ -302,5 +315,44 @@ describe('computeStreaks', () => {
       onDay('2024-03-02'),
     ]);
     expect(s.longest.length).toBe(3);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// computeRepoSummary
+// ---------------------------------------------------------------------------
+
+describe('computeRepoSummary', () => {
+  it('finds the first and last commit dates in unsorted input', () => {
+    const s = computeRepoSummary(COMMITS, '/tmp/repo');
+    expect(s.dateRange.from.toISOString()).toBe('2024-01-15T10:00:00.000Z');
+    expect(s.dateRange.to.toISOString()).toBe('2024-02-10T14:00:00.000Z');
+  });
+
+  it('gives each language one row, whichever extensions it uses', () => {
+    const file = (path: string) => ({ path, insertions: 1, deletions: 0 });
+    const s = computeRepoSummary([
+      makeCommit({ files: [file('ci.yml'), file('compose.yaml'), file('a.js'), file('b.mjs')] }),
+      makeCommit({ files: [file('deploy.yml'), file('c.ts')] }),
+    ], '/tmp/repo');
+    expect(s.topLanguages.map(l => [l.language, l.fileChanges])).toEqual([
+      ['YAML', 3],
+      ['JavaScript', 2],
+      ['TypeScript', 1],
+    ]);
+  });
+
+  it('handles histories too long to spread into Math.min', () => {
+    // A million arguments overflows the stack whether the suite runs on the
+    // main thread or in a worker, which has a larger stack. One shared commit
+    // object keeps the array light.
+    const first = makeCommit({ hash: 'first', date: new Date('2020-01-01T00:00:00Z') });
+    const middle = makeCommit({ hash: 'middle', date: new Date('2022-03-15T12:00:00Z') });
+    const last = makeCommit({ hash: 'last', date: new Date('2024-06-30T00:00:00Z') });
+    const many = [middle, last].concat(new Array(999_997).fill(middle), [first]);
+    const s = computeRepoSummary(many, '/tmp/repo');
+    expect(s.totalCommits).toBe(1_000_000);
+    expect(s.dateRange.from.toISOString()).toBe('2020-01-01T00:00:00.000Z');
+    expect(s.dateRange.to.toISOString()).toBe('2024-06-30T00:00:00.000Z');
   });
 });

@@ -2,10 +2,18 @@ import Table from 'cli-table3';
 import chalk from 'chalk';
 import type { AuthorStats, FileChurn } from '../types.js';
 
+/**
+ * A cli-table3 table with its built-in colouring turned off. cli-table3 colours
+ * headers and borders itself, ignoring NO_COLOR and redirection; leaving colour
+ * to chalk keeps piped and NO_COLOR output free of escape codes.
+ */
+export function plainTable(options: Omit<Table.TableConstructorOptions, 'style'> = {}): Table.Table {
+  return new Table({ ...options, style: { head: [], border: [] } });
+}
+
 export function renderAuthorsTable(authors: AuthorStats[]): string {
-  const t = new Table({
+  const t = plainTable({
     head: ['#', 'Author', 'Commits', '+Lines', '-Lines', 'Net', 'Days'].map(h => chalk.cyan(h)),
-    style: { border: ['dim'] },
   });
   authors.forEach((a, i) => {
     const net = a.insertions - a.deletions;
@@ -23,9 +31,8 @@ export function renderAuthorsTable(authors: AuthorStats[]): string {
 }
 
 export function renderChurnTable(files: FileChurn[]): string {
-  const t = new Table({
+  const t = plainTable({
     head: ['File', 'Times Changed', '+Lines', '-Lines'].map(h => chalk.cyan(h)),
-    style: { border: ['dim'] },
     colWidths: [48, 15, 10, 10],
   });
   for (const f of files) {

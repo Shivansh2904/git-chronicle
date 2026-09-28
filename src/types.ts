@@ -1,3 +1,10 @@
+/** One file's line counts in one commit, as reported by `git log --numstat`. */
+export interface FileChange {
+  path: string;
+  insertions: number;
+  deletions: number;
+}
+
 export interface CommitRecord {
   hash: string;
   author: string;
@@ -7,7 +14,7 @@ export interface CommitRecord {
   filesChanged: number;
   insertions: number;
   deletions: number;
-  filenames: string[];
+  files: FileChange[];
 }
 
 export interface AuthorStats {
@@ -35,7 +42,8 @@ export interface RepoSummary {
   dateRange: { from: Date; to: Date };
   mostActiveHour: number;
   mostActiveDayOfWeek: number;
-  topLanguages: { ext: string; lines: number; pct: number }[];
+  /** Files changed per language across all commits, largest first. */
+  topLanguages: { language: string; fileChanges: number; pct: number }[];
 }
 
 export interface HeatmapData {
@@ -48,13 +56,4 @@ export interface StreakData {
   longest: { length: number; from: string | null; to: string | null };
   current: { length: number; from: string | null; to: string | null };
   totalActiveDays: number;
-}
-
-export interface AnalyzeOptions {
-  top: string;
-  since?: string;
-}
-
-export interface AuthorsOptions {
-  sort: 'commits' | 'insertions' | 'deletions';
 }
