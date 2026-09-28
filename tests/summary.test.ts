@@ -53,6 +53,23 @@ describe('most active weekday', () => {
   });
 });
 
+describe('summary card counts', () => {
+  const plain = (text: string) => text.replace(/\x1b\[[0-9;]*m/g, '');
+
+  it('uses the singular for one commit, one author and one month', () => {
+    const card = plain(renderSummaryCard(computeRepoSummary([commitOn('2024-01-15')], '/tmp/repo')));
+    expect(card).toContain('1 commit · 1 author · 1 month');
+  });
+
+  it('uses the plural for anything else', () => {
+    const bob = (isoDay: string): CommitRecord => ({ ...commitOn(isoDay), author: 'Bob', email: 'bob@example.com' });
+    // 2024-01-15 to 2024-04-15 is 91 days, which the card rounds to 3 months.
+    const commits = [commitOn('2024-01-15'), bob('2024-02-15'), commitOn('2024-04-15')];
+    const card = plain(renderSummaryCard(computeRepoSummary(commits, '/tmp/repo')));
+    expect(card).toContain('3 commits · 2 authors · 3 months');
+  });
+});
+
 describe('summary card box', () => {
   const level = chalk.level;
   afterEach(() => { chalk.level = level; });

@@ -1,19 +1,25 @@
 import { describe, it, expect } from 'vitest';
 import { buildReport, type ReportInput } from '../src/commands/report.js';
-import type { RepoSummary } from '../src/types.js';
+import { computeRepoSummary } from '../src/core/stats.js';
+import type { CommitRecord } from '../src/types.js';
 
-const summaryAt = (path: string): RepoSummary => ({
-  path,
-  totalCommits: 3,
-  authors: 1,
-  dateRange: { from: new Date('2024-01-15T10:00:00Z'), to: new Date('2024-02-10T14:00:00Z') },
-  mostActiveHour: 14,
-  mostActiveDayOfWeek: 0,
-  topLanguages: [],
-});
+const COMMITS: CommitRecord[] = [
+  {
+    hash: 'a1',
+    author: 'Alice',
+    email: 'alice@example.com',
+    date: new Date('2024-01-15T10:00:00Z'),
+    subject: 'first',
+    filesChanged: 0,
+    insertions: 0,
+    deletions: 0,
+    files: [],
+  },
+];
 
-const input = (path: string): ReportInput => ({
-  summary: summaryAt(path),
+// The summary is built the way `report` builds it: from the repository's local path.
+const input = (repoPath: string): ReportInput => ({
+  summary: computeRepoSummary(COMMITS, repoPath),
   authors: [],
   timeline: [],
   churn: [],

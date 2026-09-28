@@ -49,9 +49,15 @@ export function computeTimeline(commits: CommitRecord[]): { month: string; count
   return [...map.entries()].sort(([a], [b]) => a.localeCompare(b)).map(([month, count]) => ({ month, count }));
 }
 
+/** The last segment of a local path, split on either separator. */
+export function repoName(repoPath: string): string {
+  return repoPath.split(/[/\\]/).filter(Boolean).pop() ?? repoPath;
+}
+
 export function computeRepoSummary(commits: CommitRecord[], repoPath: string): RepoSummary {
+  const name = repoName(repoPath);
   if (commits.length === 0) {
-    return { path: repoPath, totalCommits: 0, authors: 0, dateRange: { from: new Date(), to: new Date() }, mostActiveHour: 0, mostActiveDayOfWeek: 0, topLanguages: [] };
+    return { name, totalCommits: 0, authors: 0, dateRange: { from: new Date(), to: new Date() }, mostActiveHour: 0, mostActiveDayOfWeek: 0, topLanguages: [] };
   }
   // A loop rather than Math.min(...times): spreading one argument per commit
   // overflows the call stack on large histories.
@@ -84,7 +90,7 @@ export function computeRepoSummary(commits: CommitRecord[], repoPath: string): R
     .map(([language, fileChanges]) => ({ language, fileChanges, pct: Math.round((fileChanges / totalFiles) * 100) }));
 
   return {
-    path: repoPath,
+    name,
     totalCommits: commits.length,
     authors: emailSet.size,
     dateRange: { from: first, to: last },

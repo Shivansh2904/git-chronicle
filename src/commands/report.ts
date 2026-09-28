@@ -35,11 +35,12 @@ function fmtDate(d: Date): string {
 
 /**
  * Render the Markdown report. Reports get pasted into issues and wikis, so the
- * repository is named by its directory name only, never by its local path.
+ * repository is named by its directory name only (`summary.name`), never by
+ * its local path.
  */
 export function buildReport(input: ReportInput): string {
   const { summary, authors, timeline, churn, since, until, generatedAt } = input;
-  const repoName = summary.path.split(/[/\\]/).pop() ?? summary.path;
+  const repoName = summary.name;
   const lines: string[] = [];
 
   lines.push(`# ${repoName} — Repository Report`);

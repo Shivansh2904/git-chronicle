@@ -36,7 +36,8 @@ export interface FileChurn {
 }
 
 export interface RepoSummary {
-  path: string;
+  /** The repository's directory name. Never its local path: summaries end up in JSON output and reports. */
+  name: string;
   totalCommits: number;
   authors: number;
   dateRange: { from: Date; to: Date };
